@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: artem
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./cloud
+      dockerfile: Dockerfile
+    container_name: backendCloud
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+      SPRING_DATASOURCE_USERNAME: artem
+      SPRING_DATASOURCE_PASSWORD: password
+    volumes:
+    - uploads:/app/uploads
+    depends_on:
+      - postgres
+
+  frontend:
+    image: nginx:latest
+    container_name: frontendCloud
+    ports:
+      - "8081:80"
+    volumes:
+      - ./netology-diplom-frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  uploads:
