@@ -5,6 +5,8 @@ import com.diplom.cloud.login.LoginRequest;
 import com.diplom.cloud.repository.UserRepository;
 import com.diplom.cloud.service.UserService;
 import com.diplom.cloud.token.TokenStorage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,12 +29,12 @@ public class AuthController {
     private UserService userService;
     @Autowired
     private UserRepository userRepository;
+    private static final Logger logger = LogManager.getLogger(AuthController.class);
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            System.out.println("Начинаем аутентификацию:" + loginRequest.getLogin() + " " + loginRequest.getPassword());
-
+            logger.info("Аутентификация пользователя {} ", loginRequest.getLogin());
             //Добавляем пользователя для аутентификации--
 //            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 //            String hashedPassword = passwordEncoder.encode("password");
@@ -43,12 +45,12 @@ public class AuthController {
 
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getLogin(), loginRequest.getPassword()));
-            System.out.println("Аутентификация пройдена");
+            logger.info("Аутентификация пройдена");
 
             // Генерируем токен
             String token = TokenStorage.generateToken(loginRequest.getLogin());
             String email = loginRequest.getLogin();
-            System.out.println("Токен есть: " + token);
+            logger.debug("Токен получен: {}", token);
 
             // Успешный ответ
             Map<String, String> response = new HashMap<>();

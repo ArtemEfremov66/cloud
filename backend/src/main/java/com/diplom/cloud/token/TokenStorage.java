@@ -1,5 +1,8 @@
 package com.diplom.cloud.token;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -7,6 +10,7 @@ import java.util.UUID;
 public class TokenStorage {
 
     private static final Map<String, String> tokenToUserMap = new HashMap<>();
+    private static final Logger logger = LogManager.getLogger(TokenStorage.class);
 
     public static String generateToken(String username) {
         String token = UUID.randomUUID().toString();
@@ -15,8 +19,8 @@ public class TokenStorage {
     }
 
     public static boolean isValidToken(String token) {
-        System.out.println("Проверяем валидность, пришел токен: " + token);
-        System.out.println("В мапе найден пользователь по токену: " + tokenToUserMap.get(token));
+        logger.debug("Проверяем валидность, пришел токен: {}", token);
+        logger.debug("В мапе найден пользователь по токену: {}", tokenToUserMap.get(token));
         return tokenToUserMap.containsKey(token);
     }
 

@@ -16,7 +16,6 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = request.getHeader("auth-token");
-        System.out.println("Token: " + token);
         if (token != null && TokenStorage.isValidToken(token)) {
             // Если токен валиден, устанавливаем аутентификацию в контекст Security
             String username = TokenStorage.getUserByToken(token); // Получаем имя пользователя

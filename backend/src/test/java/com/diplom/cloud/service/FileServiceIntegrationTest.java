@@ -65,7 +65,7 @@ public class FileServiceIntegrationTest {
         when(file.getOriginalFilename()).thenReturn(filename);
 
         // Act
-        fileService.uploadFile(email, filename, file);
+        fileService.uploadFile(user, filename, file);
 
         // Assert
         assertEquals(1, fileRepository.count());

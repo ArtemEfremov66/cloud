@@ -1,6 +1,9 @@
 package com.diplom.cloud.controller;
 
+import com.diplom.cloud.Exceptions.*;
+import com.diplom.cloud.entity.User;
 import com.diplom.cloud.service.FileService;
+import com.diplom.cloud.service.UserService;
 import com.diplom.cloud.token.TokenStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
@@ -11,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -21,23 +23,30 @@ public class FileController {
 
     @Autowired
     private FileService fileService;
+    @Autowired
+    private UserService userService;
 
     @PostMapping("/file")
     public ResponseEntity<?> uploadFile(@RequestHeader("auth-token") String authToken,
                                         @RequestParam("filename") String filename,
                                         @RequestParam("file") MultipartFile file) {
-        System.out.println("Загрузка файла");
         try {
             String username = TokenStorage.getUserByToken(authToken);
             if (username == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
+                throw new InvalidTokenException("Invalid token");
+            }
+            User user = userService.findByLogin(username);
+            if (user == null) {
+                throw new UserNotFoundException("User not found");
             }
 
-            fileService.uploadFile(username, filename, file);
+            fileService.uploadFile(user, filename, file);
             return ResponseEntity.ok().build();
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file");
-        } catch (RuntimeException e) {
+        } catch (InvalidTokenException | UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (FileUploadException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
@@ -50,10 +59,14 @@ public class FileController {
             if (username == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
+            User user = userService.findByLogin(username);
+            if (user == null) {
+                throw new RuntimeException("User not found");
+            }
 
-            fileService.deleteFile(username, filename);
+            fileService.deleteFile(user, filename);
             return ResponseEntity.ok().build();
-        } catch (RuntimeException e) {
+        } catch (FileDeleteException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
@@ -66,8 +79,12 @@ public class FileController {
             if (username == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
+            User user = userService.findByLogin(username);
+            if (user == null) {
+                throw new UserNotFoundException("User not found");
+            }
 
-            File file = fileService.getFile(username, filename);
+            File file = fileService.getFile(user, filename);
             if (!file.exists()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
             }
@@ -83,14 +100,17 @@ public class FileController {
     @GetMapping("/list")
     public ResponseEntity<?> getFileList(@RequestHeader("auth-token") String authToken,
                                          @RequestParam("limit") int limit) {
-        System.out.println("Получаем список файлов");
         try {
             String username = TokenStorage.getUserByToken(authToken);
             if (username == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
+            User user = userService.findByLogin(username);
+            if (user == null) {
+                throw new UserNotFoundException("User not found");
+            }
 
-            List<Map<String, Object>> fileList = fileService.getFileList(username, limit);
+            List<Map<String, Object>> fileList = fileService.getFileList(user, limit);
             return ResponseEntity.ok(fileList);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -113,11 +133,15 @@ public class FileController {
             if (username == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
             }
+            User user = userService.findByLogin(username);
+            if (user == null) {
+                throw new UserNotFoundException("User not found");
+            }
 
             // Вызываем сервис для переименования файла
-            fileService.renameFile(username, filename, newFilename);
+            fileService.renameFile(user, filename, newFilename);
             return ResponseEntity.ok().build();
-        } catch (RuntimeException e) {
+        } catch (FileRenameException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
